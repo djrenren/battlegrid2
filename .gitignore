@@ -2,7 +2,7 @@
 
 # Logs
 
-build
+public/build
 
 logs
 _.log

@@ -3,16 +3,17 @@
   "module": "build.ts",
   "type": "module",
   "scripts": {
-    "watch": "esbuild src/index.ts --bundle --minify --sourcemap --serve --outdir=public/build --servedir=public"
+    "build": "esbuild src/index.ts src/assets/sw.ts --bundle --minify --sourcemap  --outdir=public/build --outbase=src",
+    "watch": "npm run build --  --serve --servedir=public"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "esbuild": "^0.19.2"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "esbuild": "^0.19.2",
+    "yjs": "^13.6.8",
     "lit": "^3.0.0-pre.0"
   }
 }
