@@ -1,11 +1,18 @@
 {
   "name": "battlegrid2",
-  "module": "index.ts",
+  "module": "build.ts",
   "type": "module",
+  "scripts": {
+    "watch": "esbuild src/index.ts --bundle --minify --sourcemap --serve --outdir=public/build --servedir=public"
+  },
   "devDependencies": {
     "bun-types": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "esbuild": "^0.19.2",
+    "lit": "^3.0.0-pre.0"
   }
 }
