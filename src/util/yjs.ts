@@ -7,7 +7,13 @@ export interface TypedMap<Shape> {
   keys(): IterableIterator<keyof Shape>;
   values(): IterableIterator<Shape[keyof Shape]>;
   delete<K extends keyof Shape & string>(k: K): void;
-  forEach(f: (arg0: Shape[keyof Shape], arg1: keyof Shape, arg2: TypedMap<Shape>) => void): Shape;
+  forEach(
+    f: (
+      arg0: Shape[keyof Shape],
+      arg1: keyof Shape,
+      arg2: TypedMap<Shape>,
+    ) => void,
+  ): Shape;
   has(key: keyof Shape): boolean;
   clear(): void;
   clone(): TypedMap<Shape>;

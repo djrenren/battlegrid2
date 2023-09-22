@@ -3,11 +3,13 @@
   "module": "build.ts",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/index.ts src/assets/sw.ts --bundle --minify --sourcemap  --outdir=public/build --outbase=src",
-    "watch": "npm run build --  --serve --servedir=public"
+    "build": "esbuild src/index.ts sw.ts --bundle --minify --sourcemap  --outdir=public/",
+    "watch": "npm run build --  --serve --servedir=public",
+    "fmt": "prettier --write ."
   },
   "devDependencies": {
-    "esbuild": "^0.19.2"
+    "esbuild": "^0.19.2",
+    "prettier": "~3.0.3"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

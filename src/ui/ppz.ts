@@ -58,23 +58,38 @@ export class PPZ extends HTMLElement {
 
       this.smooth = false;
     };
-    this.addEventListener("scroll", () => {
-      this.scrollx = this.scrollLeft;
-      this.scrolly = this.scrollTop;
-    }, {passive: true});
+    this.addEventListener(
+      "scroll",
+      () => {
+        this.scrollx = this.scrollLeft;
+        this.scrolly = this.scrollTop;
+      },
+      { passive: true },
+    );
     this.addEventListener("gesturestart", this.#gesture.start);
     this.addEventListener("gesturechange", this.#gesture.change);
-    document.addEventListener("keydown", this.#keyboard_zoom, { passive: false });
+    document.addEventListener("keydown", this.#keyboard_zoom, {
+      passive: false,
+    });
   }
 
   #zoom_to_fit() {
-    let svg = (this.root.querySelector("slot") as HTMLSlotElement).assignedElements()[0] as HTMLDivElement;
+    let svg = (
+      this.root.querySelector("slot") as HTMLSlotElement
+    ).assignedElements()[0] as HTMLDivElement;
     let dim = this.getBoundingClientRect();
     this.vdimx = dim.width;
     this.vdimy = dim.height;
     this.cdimx = svg.offsetWidth;
     this.cdimy = svg.offsetHeight;
-    const zoom = Math.max(this.min_scale, Math.min(this.max_scale, (this.vdimx / this.cdimx) * AUTO_ZOOM_FILL, (this.vdimy / this.cdimy) * AUTO_ZOOM_FILL));
+    const zoom = Math.max(
+      this.min_scale,
+      Math.min(
+        this.max_scale,
+        (this.vdimx / this.cdimx) * AUTO_ZOOM_FILL,
+        (this.vdimy / this.cdimy) * AUTO_ZOOM_FILL,
+      ),
+    );
     this.zoom(0, 0, zoom - this.z);
   }
 
@@ -90,7 +105,7 @@ export class PPZ extends HTMLElement {
         //@ts-ignore;
         this.cdimx = e.target.offsetWidth;
         //@ts-ignore;
-        this.cdimy =  e.target.offsetHeight;
+        this.cdimy = e.target.offsetHeight;
         this.#zoom_to_fit();
       }
     }
@@ -107,7 +122,9 @@ export class PPZ extends HTMLElement {
       this.#prv = ts;
 
       // If it's smooth, we'll move in increments, otherwise perform all adjustments in one frame
-      let delta_scale = this.smooth ? Math.sign(delta) * Math.min(elapsed * SPEED * this.z, Math.abs(delta)) : delta;
+      let delta_scale = this.smooth
+        ? Math.sign(delta) * Math.min(elapsed * SPEED * this.z, Math.abs(delta))
+        : delta;
 
       // Record the new z
       this.z += delta_scale;
@@ -131,8 +148,8 @@ export class PPZ extends HTMLElement {
    * This updates the `offset` member accordingly
    */
   center() {
-    this.offsetx = Math.max(0, this.vdimx - (this.cdimx * this.z)) * 0.5;
-    this.offsety = Math.max(0, this.vdimy - (this.cdimy * this.z)) * 0.5;
+    this.offsetx = Math.max(0, this.vdimx - this.cdimx * this.z) * 0.5;
+    this.offsety = Math.max(0, this.vdimy - this.cdimy * this.z) * 0.5;
     this.container.style.transform = `translate(${this.offsetx}px, ${this.offsety}px) scale(${this.z})`;
   }
   /**
@@ -140,7 +157,10 @@ export class PPZ extends HTMLElement {
    * Sets up our animation loop and event listenees
    */
   connectedCallback() {
-    this.addEventListener("wheel", this.wheel, { passive: true, capture: true });
+    this.addEventListener("wheel", this.wheel, {
+      passive: true,
+      capture: true,
+    });
   }
 
   /**
@@ -148,7 +168,10 @@ export class PPZ extends HTMLElement {
    */
   zoom = (x: number, y: number, inc: number) => {
     // Step 1: Bound the proposed delta by the min and max scale
-    this.desired_z = Math.min(this.max_scale, Math.max(this.min_scale, this.desired_z + inc));
+    this.desired_z = Math.min(
+      this.max_scale,
+      Math.max(this.min_scale, this.desired_z + inc),
+    );
 
     // Step 2: Record the current scroll position.
     //          TODO: Determine if we still need this when we record on scroll event
@@ -159,7 +182,7 @@ export class PPZ extends HTMLElement {
     [this.originx, this.originy] = this.coordToLocal(x, y);
 
     // Step 4: Do the zooming? We have an animation loop running for that
-    this.#animate()
+    this.#animate();
   };
 
   /**
@@ -191,17 +214,17 @@ export class PPZ extends HTMLElement {
     if (ev.key === "-" || ev.key === "-") {
       this.smooth = true;
       this.zoom(
-        this.vlocx + (this.vdimx / 2),
-        this.vlocy + (this.vdimy / 2),
-        -0.4 * this.z
+        this.vlocx + this.vdimx / 2,
+        this.vlocy + this.vdimy / 2,
+        -0.4 * this.z,
       );
       stop_ev(ev);
     } else if (ev.key === "=" || ev.key === "+") {
       this.smooth = true;
       this.zoom(
-        this.vlocx + (this.vdimx / 2),
-        this.vlocy + (this.vdimy / 2),
-        0.4 * this.z
+        this.vlocx + this.vdimx / 2,
+        this.vlocy + this.vdimy / 2,
+        0.4 * this.z,
       );
       stop_ev(ev);
     } else if (ev.key === "0") {
@@ -220,17 +243,18 @@ export class PPZ extends HTMLElement {
 
     start: (ev: any) => {
       stop_ev(ev);
-      this.#gesture.originx = ev.clientX
-      this.#gesture.originy = ev.clientY
+      this.#gesture.originx = ev.clientX;
+      this.#gesture.originy = ev.clientY;
       this.#gesture.prev_scale = 1;
     },
 
     change: (ev: any) => {
       stop_ev(ev);
       this.zoom(
-        this.#gesture.originx, this.#gesture.originy,
+        this.#gesture.originx,
+        this.#gesture.originy,
         // I'll be real I'm not entirely sure why this is the magic number
-        this.z * (ev.scale - this.#gesture.prev_scale) * 1.5
+        this.z * (ev.scale - this.#gesture.prev_scale) * 1.5,
       );
       this.#gesture.prev_scale = ev.scale;
     },
@@ -245,7 +269,7 @@ export class PPZ extends HTMLElement {
     return [
       (x - this.vlocx + this.scrollx - this.offsetx) / this.z,
       (y - this.vlocy + this.scrolly - this.offsety) / this.z,
-    ]
+    ];
   }
 
   static template(): HTMLTemplateElement {
@@ -278,7 +302,8 @@ export class PPZ extends HTMLElement {
   }
 }
 
-const next_frame = (): Promise<DOMHighResTimeStamp> => new Promise((res) => window.requestAnimationFrame(res));
+const next_frame = (): Promise<DOMHighResTimeStamp> =>
+  new Promise((res) => window.requestAnimationFrame(res));
 
 // We use round to prevent small rendering errors that occur when transforms are highly precise.
 // Two decimals seems to be pretty safe

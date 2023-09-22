@@ -8,16 +8,16 @@ import { GridLines } from "./grid.ts";
 
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
-    @query("grid-lines")
-    gl!: GridLines;
+  @query("grid-lines")
+  gl!: GridLines;
   render() {
     return html`
       <p-p-z>
         <div id="board">
-            <div id="padder">
-                <img alt="chill" src="img/map3.webp" @load=${this.img_loaded}/>
-                <grid-lines></grid-lines>
-            </div>
+          <div id="padder">
+            <img alt="chill" src="img/map3.webp" @load=${this.img_loaded} />
+            <grid-lines></grid-lines>
+          </div>
         </div>
       </p-p-z>
     `;
@@ -26,48 +26,55 @@ export class Canvas extends LitElement {
   img_loaded = (ev: Event) => {
     let img = ev.target as HTMLImageElement;
 
-    console.log("Dimensions", img.naturalWidth, img.naturalHeight)
-    console.log("Dividers", common_dividers(img.naturalWidth, img.naturalHeight))
+    console.log("Dimensions", img.naturalWidth, img.naturalHeight);
+    console.log(
+      "Dividers",
+      common_dividers(img.naturalWidth, img.naturalHeight),
+    );
     let min = Infinity;
+    let min_diff = Infinity;
     for (let d of common_dividers(img.naturalWidth, img.naturalHeight)) {
-        if (Math.abs(70- d) < Math.abs(min)) {
-            min = d
-        }
+      let diff = Math.abs(70 - d);
+      if (diff < min_diff) {
+        min = d;
+        min_diff = diff;
+      }
     }
 
     this.gl.dim = min;
-  }
+  };
 
   static styles = css`
     :host {
-        overflow: none;
-        display: block;
+      overflow: none;
+      display: block;
       width: 100vw;
       height: 100vh;
     }
     p-p-z {
-        width: 100%;
-        height: 100%;
-        background: #e0e0e0;
+      width: 100%;
+      height: 100%;
+      background: #e0e0e0;
     }
 
-    #board, #padder {
-        width: fit-content;
-        height: fit-content;
+    #board,
+    #padder {
+      width: fit-content;
+      height: fit-content;
     }
 
     div {
-        position: relative;
+      position: relative;
     }
 
     #board {
-        padding: 5%;
+      padding: 5%;
     }
 
     grid-lines {
-        image-rendering: pixelated;
-        position: absolute;
-        inset: 0;
+      image-rendering: pixelated;
+      position: absolute;
+      inset: 0;
     }
     img {
       display: block;

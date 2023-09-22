@@ -13,41 +13,37 @@ export class GridLines extends LitElement {
 
   render = () => html`
     <style>
-        :host {
-            background-position: ${this.offsetx}px ${this.offsety}px;
+      :host {
+        background-position: ${this.offsetx}px ${this.offsety}px;
         background-size: ${this.dim}px ${this.dim}px;
-        background-image:
-        linear-gradient(to right, grey 1px, transparent 1px),
-    linear-gradient(to bottom, grey 1px, transparent 1px);
-        }
+        background-image: linear-gradient(to right, grey 1px, transparent 1px),
+          linear-gradient(to bottom, grey 1px, transparent 1px);
+      }
     </style>
   `;
 
   #wheel = (ev: WheelEvent) => {
-
     if (ev.shiftKey && !ev.altKey) {
-        stop_ev(ev);
-        this.offsetx = (this.offsetx + Math.sign(ev.deltaX)) % this.dim;
-        this.offsety = (this.offsety + Math.sign(ev.deltaY)) % this.dim;
+      stop_ev(ev);
+      this.offsetx = (this.offsetx + Math.sign(ev.deltaX)) % this.dim;
+      this.offsety = (this.offsety + Math.sign(ev.deltaY)) % this.dim;
     }
 
     if (!ev.shiftKey && ev.altKey) {
-        stop_ev(ev);
-        this.dim += Math.sign(ev.deltaY);
+      stop_ev(ev);
+      this.dim += Math.sign(ev.deltaY);
     }
-
-  }
+  };
 
   connectedCallback(): void {
     super.connectedCallback();
-      this.addEventListener("wheel", this.#wheel);
+    this.addEventListener("wheel", this.#wheel);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-      this.removeEventListener("wheel", this.#wheel);
+    this.removeEventListener("wheel", this.#wheel);
   }
 
-  static styles = css`
-  `;
+  static styles = css``;
 }

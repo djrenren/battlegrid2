@@ -2,7 +2,8 @@
 
 # Logs
 
-public/build
+public/src
+public/sw.js
 
 logs
 _.log
