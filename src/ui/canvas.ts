@@ -61,6 +61,7 @@ export class Canvas extends LitElement {
     #padder {
       width: fit-content;
       height: fit-content;
+      box-sizing: border-box;
     }
 
     div {
@@ -68,7 +69,7 @@ export class Canvas extends LitElement {
     }
 
     #board {
-      padding: 5%;
+      box-sizing: border-box;
     }
 
     grid-lines {
@@ -76,6 +77,7 @@ export class Canvas extends LitElement {
       position: absolute;
       inset: 0;
     }
+
     img {
       display: block;
       width: fit-content;
