@@ -5,17 +5,27 @@
   "scripts": {
     "build": "esbuild src/index.ts sw.ts --bundle --minify --sourcemap  --outdir=public/",
     "watch": "npm run build --  --serve --servedir=public",
-    "fmt": "prettier --write ."
+    "fmt": "prettier --write .",
+    "test": "wtr"
   },
   "devDependencies": {
+    "@esm-bundle/chai": "^4.3.4-fix.0",
+    "@types/mocha": "^10.0.6",
+    "@web/dev-server-esbuild": "^1.0.1",
+    "@web/test-runner": "^0.18.0",
+    "@web/test-runner-puppeteer": "^0.15.0",
     "esbuild": "^0.19.2",
+    "node-datachannel": "0.5.2",
     "prettier": "~3.0.3"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "yjs": "^13.6.8",
-    "lit": "^3.0.0-pre.0"
+    "lib0": "^0.2.88",
+    "lit": "^3.0.0-pre.0",
+    "y-protocols": "^1.0.6",
+    "y-webrtc": "^10.2.6",
+    "yjs": "^13.6.8"
   }
 }

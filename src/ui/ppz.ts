@@ -7,22 +7,33 @@ const SPEED = 0.005; // 100 px per second
 export class PPZ extends HTMLElement {
   #root: ShadowRoot;
   #container: HTMLDivElement;
-  #expander: HTMLDivElement;
 
   get #max_scale() {
-    return Math.max(this.#vdimx / this.#cdimx, this.#vdimy / this.#cdimy) * 2;
+    return (
+      Math.max(1, this.#vdimx / this.#cdimx, this.#vdimy / this.#cdimy) * 2
+    );
   }
 
   get #min_scale() {
-    return Math.min(this.#vdimx / (this.#cdimx + 200), this.#vdimy / (this.#cdimy + 200));
+    return Math.min(
+      1,
+      this.#vdimx / (this.#cdimx + 200),
+      this.#vdimy / (this.#cdimy + 200),
+    );
   }
 
   get #scrollx_max() {
-    return Math.max(0, this.#cdimx * this.#scale - this.#vdimx + Math.max(0, this.#offsetx));
+    return Math.max(
+      0,
+      this.#cdimx * this.#scale - this.#vdimx + Math.max(0, this.#offsetx),
+    );
   }
 
   get #scrolly_max() {
-    return Math.max(0, this.#cdimy * this.#scale - this.#vdimy + Math.max(0, this.#offsety));
+    return Math.max(
+      0,
+      this.#cdimy * this.#scale - this.#vdimy + Math.max(0, this.#offsety),
+    );
   }
 
   /** Location of the viewport in client space */
@@ -37,67 +48,25 @@ export class PPZ extends HTMLElement {
   #cdimx = 0;
   #cdimy = 0;
 
+  /** The current display parameters */
   #scale: number = 1;
   #offsetx: number = 0;
   #offsety: number = 0;
   #scrollx: number = 0;
   #scrolly: number = 0;
 
-  #zoom(z_inc: number, clientx: number, clienty: number) {
-    z_inc = delta_clamp(this.#scale, z_inc, this.#min_scale, this.#max_scale);
-    
+  /** The current gesture state */
+  #gesturex: number = 0;
+  #gesturey: number = 0;
 
-    let innerx = (this.#scrollx + clientx - this.#vlocx - this.#offsetx) / this.#scale;
-    let innery = (this.#scrolly + clienty - this.#vlocy - this.#offsety) / this.#scale;
-    let deltax = innerx * z_inc;
-    let deltay = innery * z_inc;
-
-    this.#scale += z_inc;
-
-
-    // Try scrolling
-    let sdx = delta_clamp(this.#scrollx, deltax, 0, this.#scrollx_max);
-    let sdy = delta_clamp(this.#scrolly, deltay, 0, this.#scrolly_max);
-
-    this.#scrollx += sdx;
-    this.#scrolly += sdy;
-
-    deltax -= sdx;
-    deltay -= sdy;
-
-    if (Math.abs(deltax) > 0.01) {
-      let odx = delta_clamp(this.#offsetx, -deltax, 0, Infinity);
-      this.#offsetx += odx;
-    }
-
-    if (Math.abs(deltay) > 0.01) {
-      let ody = delta_clamp(this.#offsety, -deltay, 0, Infinity);
-      this.#offsety += ody;
-    }
-  }
-
-
+  #pending_zoom: number = 0;
+  #gesture_active: boolean = false;
 
   constructor() {
     super();
     this.#root = this.attachShadow({ mode: "open" });
     this.#root.appendChild(PPZ.template().content.cloneNode(true));
     this.#container = this.#root.getElementById("container") as HTMLDivElement;
-    this.#expander = this.#root.getElementById("expander") as HTMLDivElement;
-    this.#resize_observer.observe(this);
-    this.#root.querySelector("slot")!.onslotchange = ({ target }) => {
-      let slot = target as HTMLSlotElement;
-      let svg = slot.assignedElements()[0] as HTMLElement;
-      this.#resize_observer.observe(svg);
-    };
-    this.addEventListener(
-      "scroll",
-      () => {
-        this.#scrollx = this.scrollLeft;
-        this.#scrolly = this.scrollTop;
-      },
-      { passive: true },
-    );
   }
 
   #resize_observer = new ResizeObserver((entries) => {
@@ -105,6 +74,7 @@ export class PPZ extends HTMLElement {
       if (e.target === this) {
         this.#vdimx = e.contentRect.width;
         this.#vdimy = e.contentRect.height;
+
         const rect = this.getBoundingClientRect();
         this.#vlocx = rect.x;
         this.#vlocy = rect.y;
@@ -121,16 +91,62 @@ export class PPZ extends HTMLElement {
 
   /**
    * Runs when the component is attached to the DOM.
-   * Sets up our animation loop and event listenees
+   * Sets up our animation loop and event listeners
    */
   connectedCallback() {
-    this.addEventListener("wheel", this.wheel, {
+    this.#resize_observer.observe(this);
+
+    // Observe the content in the slot. We can't use the dimensions of the container div,
+    // because as far as the DOM is concerned it's 0x0.
+    this.#root.querySelector("slot")!.onslotchange = ({ target }) => {
+      let slot = target as HTMLSlotElement;
+      let svg = slot.assignedElements()[0] as HTMLElement;
+      this.#resize_observer.observe(svg);
+    };
+
+    this.addEventListener("wheel", this.#wheel, {
       passive: true,
       capture: true,
     });
+
+    this.addEventListener(
+      "scroll",
+      () => {
+        this.#scrollx = this.scrollLeft;
+        this.#scrolly = this.scrollTop;
+      },
+      { passive: true },
+    );
   }
 
+  /** The core zooming logic. Invoked by the animation loop in response to the gesture state */
+  #zoom(z_inc: number, clientx: number, clienty: number) {
+    // Ensure we're bound by the scale limits
+    z_inc = delta_clamp(this.#scale, z_inc, this.#min_scale, this.#max_scale);
 
+    let innerx =
+      (this.#scrollx + clientx - this.#vlocx - this.#offsetx) / this.#scale;
+    let innery =
+      (this.#scrolly + clienty - this.#vlocy - this.#offsety) / this.#scale;
+    let deltax = innerx * z_inc;
+    let deltay = innery * z_inc;
+
+    this.#scale += z_inc;
+
+    // Try scrolling
+    let sdx = delta_clamp(this.#scrollx, deltax, 0, this.#scrollx_max);
+    let sdy = delta_clamp(this.#scrolly, deltay, 0, this.#scrolly_max);
+
+    this.#scrollx += sdx;
+    this.#scrolly += sdy;
+
+    deltax -= sdx;
+    deltay -= sdy;
+
+    // Note: deltax and delta y contain the unresolved movement (we don't handle this now)
+  }
+
+  //#region Ctrl+Scroll / Touchpad pinch
   #gesture_timeout?: number;
   #wheel_gesture_timeout() {
     if (this.#gesture_timeout) {
@@ -143,7 +159,7 @@ export class PPZ extends HTMLElement {
   /**
    * Performs an incremental zoom on a location (local coordinate in content)
    */
-  wheel = (ev: WheelEvent) => {
+  #wheel = (ev: WheelEvent) => {
     if (!ev.ctrlKey) return;
 
     this.#gesture_active || this.#startGesture(ev.clientX, ev.clientY);
@@ -158,7 +174,11 @@ export class PPZ extends HTMLElement {
 
     // Turn the scroll delta into a zoom delta. We use a magic scalar,
     //  but note that we zoom *more* the more zoomed in we are.
-    const zoom = delta * 0.005 * this.#cdimx / this.#vdimx;
+    const zoom =
+      delta *
+      0.005 *
+      Math.min(this.#cdimx / this.#vdimx, this.#cdimy / this.#vdimy) *
+      this.#scale;
 
     // Only do smoothing if the delta is large.
     // This should correspond to using a scroll wheel as opposed to a touchpad
@@ -168,11 +188,9 @@ export class PPZ extends HTMLElement {
     this.#render();
     return false;
   };
+  //#endregion
 
-  #gesturex: number = 0;
-  #gesturey: number = 0;
-  #pending_zoom: number = 0;
-  #gesture_active: boolean = false;
+  //#region Generic Gestures
 
   #startGesture(clientx: number, clienty: number) {
     this.#gesture_active = true;
@@ -181,10 +199,10 @@ export class PPZ extends HTMLElement {
     this.#render();
   }
 
-  #stopGesture = () =>
-    this.#gesture_active = false;
+  #stopGesture = () => (this.#gesture_active = false);
+  //#endregion
 
-
+  //#region Animation loop
   #anim_frame?: number;
   #ts_prev?: DOMHighResTimeStamp;
 
@@ -194,6 +212,7 @@ export class PPZ extends HTMLElement {
   }
 
   #frame = (ts: DOMHighResTimeStamp) => {
+    /** BEGIN timekeeping */
     this.#anim_frame = undefined;
     if (!this.#ts_prev) {
       this.#ts_prev = ts;
@@ -202,68 +221,47 @@ export class PPZ extends HTMLElement {
 
     const delta = ts - this.#ts_prev;
     this.#ts_prev = ts;
+    /** END timmekeeping  */
 
+    // Calculate the desired state
     let g = this.#process_gesture(delta);
-    this.#center(Infinity);
 
-
-    this.#container.style.transform = `translate(${this.#offsetx}px, ${this.#offsety}px) scale(${this.#scale})`;
+    // Render the state
+    this.#container.style.transform = `translate(${this.#offsetx}px, ${
+      this.#offsety
+    }px) scale(${this.#scale})`;
     this.scrollTo(this.#scrollx, this.#scrolly);
 
+    // Decide whether to keep running animation loop
     if (g) {
       this.#anim_frame = requestAnimationFrame(this.#frame);
     } else {
       this.#ts_prev = undefined;
     }
-  }
+  };
 
   #process_gesture(delta: DOMHighResTimeStamp): boolean {
     if (!this.#gesture_active) return false;
     this.#zoom(this.#pending_zoom, this.#gesturex, this.#gesturey);
     this.#pending_zoom = 0;
-    return true;
-  }
 
-
-  #center_millis = 100;
-
-  #center(delta: DOMHighResTimeStamp): boolean {
-    if (this.#center_millis == 0) {
-      this.#center_millis = 100;
-      return false;
-    }
-
-    let centerx = Math.max(0, (this.#vdimx - this.#cdimx * this.#scale) * 0.5);
-    let centery = Math.max(0, (this.#vdimy - this.#cdimy * this.#scale) * 0.5);
-    this.#offsetx = centerx;
-    this.#offsety = centery;
-
-    // let doffx = centerx - this.#offsetx;
-    // let doffy = centery - this.#offsety;
-    
-    // let offx = doffx / this.#center_millis * delta;
-    // let offy = doffy / this.#center_millis * delta;
-
-    // if (delta >= this.#center_millis) {
-    //   this.#center_millis = 0;
-    //   this.#offsetx = centerx;
-    //   this.#offsety = centery;
-    // } else {
-    //   this.#center_millis = clamp(this.#center_millis - delta, 0, Infinity);
-    //   this.#offsetx += offx;
-    //   this.#offsety += offy;
-    // }
-
-
-
-    // this.#scrollx = clamp(this.#scrollx + offx, 0, this.#scrollx_max)
-    // this.#scrolly = clamp(this.#scrolly + offy, 0, this.#scrolly_max)
-
+    this.#center();
 
     return true;
   }
 
+  #center() {
+    this.#offsetx = Math.max(
+      0,
+      (this.#vdimx - this.#cdimx * this.#scale) * 0.5,
+    );
+    this.#offsety = Math.max(
+      0,
+      (this.#vdimy - this.#cdimy * this.#scale) * 0.5,
+    );
+  }
 
+  //#endregion
 
   static template(): HTMLTemplateElement {
     let t = document.createElement("template");
@@ -279,36 +277,24 @@ export class PPZ extends HTMLElement {
                     overflow: visible;
                     position: absolute;
                 }
-                #expander {
-                  position: absolute;
-
-                  width: 20px;
-                  height: 20px;
-                  background: red;
-                }
             </style>
                 <div id="container">
                     <slot id="content"></slot>
                 </div>
-                <div id="expander"></div>
             </div>
         `;
     return t;
   }
 }
 
-const next_frame = (): Promise<DOMHighResTimeStamp> =>
-  new Promise((res) => window.requestAnimationFrame(res));
-
-// We use round to prevent small rendering errors that occur when transforms are highly precise.
-// Two decimals seems to be pretty safe
 customElements.define("p-p-z", PPZ);
-function try_scroll(z_inc: number, client_x: number, client_y: number) {
-  throw new Error("Function not implemented.");
-}
 
 const clamp = (val: number, min: number, max: number) =>
-  Math.min(Math.max(val, min), max)
-  
-const delta_clamp = (base: number, delta: number, min: number, max: number): number => 
-  clamp(base + delta, min, max) - base;
+  Math.min(Math.max(val, min), max);
+
+const delta_clamp = (
+  base: number,
+  delta: number,
+  min: number,
+  max: number,
+): number => clamp(base + delta, min, max) - base;

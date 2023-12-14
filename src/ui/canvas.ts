@@ -1,21 +1,31 @@
 import { LitElement, css, html } from "lit";
-import { customElement, query } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import { common_dividers, gcd } from "../util/math";
+import type { Map } from "../game/scene.ts";
 
 import "./ppz.ts";
 import "./grid.ts";
 import { GridLines } from "./grid.ts";
+import { TypedMap } from "../util/yjs.ts";
 
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
+  @property({ attribute: false })
+  map?: TypedMap<Map>;
+
   @query("grid-lines")
   gl!: GridLines;
+
   render() {
     return html`
       <p-p-z>
-        <div id="board">
-          <div id="padder">
-            <img alt="chill" src="img/map3.webp" @load=${this.img_loaded} />
+        <div id="padder">
+          <div id="board">
+            <img
+              alt="chill"
+              src=${this.map?.get("background") as string}
+              @load=${this.img_loaded}
+            />
             <grid-lines></grid-lines>
           </div>
         </div>
@@ -24,6 +34,7 @@ export class Canvas extends LitElement {
   }
 
   img_loaded = (ev: Event) => {
+    return;
     let img = ev.target as HTMLImageElement;
 
     console.log("Dimensions", img.naturalWidth, img.naturalHeight);
@@ -45,12 +56,6 @@ export class Canvas extends LitElement {
   };
 
   static styles = css`
-    :host {
-      overflow: none;
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
     p-p-z {
       width: 100%;
       height: 100%;
@@ -68,8 +73,14 @@ export class Canvas extends LitElement {
       position: relative;
     }
 
+    #padder {
+      padding: 100px;
+    }
+
     #board {
       box-sizing: border-box;
+      border-radius: 24px;
+      overflow: hidden;
     }
 
     grid-lines {
@@ -84,7 +95,6 @@ export class Canvas extends LitElement {
       height: fit-content;
       min-width: 1px;
       min-height: 1px;
-      border-radius: 24px;
     }
   `;
 }

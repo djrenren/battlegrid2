@@ -1,5 +1,5 @@
 import { ASSET_DIR, GameFile, write } from "./fs/fs.ts";
-import "./ui/canvas.ts";
+import "./ui/app.ts";
 document.body.addEventListener(
   "wheel",
   (ev) => {
@@ -21,3 +21,4 @@ document.body.addEventListener(
 
   console.log(await fetch(`/${ASSET_DIR}/${path}`));
 })();
+localStorage.log = "^y.*";

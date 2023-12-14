@@ -1,44 +1,17 @@
-import { GameDir, Path, mkdirp } from "../fs/fs";
-import { Branded } from "../util/string";
-import { uuidv4 } from "../util/uuid";
-import { TypedMap, typed_map } from "../util/yjs";
+import { Doc } from "yjs";
+import { Nominal } from "../util/typing";
+import { Scene, SceneId } from "./scene";
+import { GameDir } from "../fs/fs";
 
-/** The unique identifier given to a game */
-export type GameId = Branded<"GameId">;
+/** A game which holds many scenes as subdocuments */
+export type Game = Doc & Nominal<"Game">;
 
-/** The concrete type that all games have */
-export type Game = TypedMap<{
-  id: string;
-  map: Map;
-}>;
+export type GameId = string & Nominal<"GameId"> & GameDir;
 
-export const new_game = (old_state?: GameShape) =>
-  typed_map({
-    id: uuidv4(),
-    map: {
-      background: "./image/map3.webp",
-      grid_dim: 1,
-      grid_offset_x: 0,
-      grid_offset_y: 0,
-    },
-    ...old_state,
-  });
+/** Constructs a new game */
+export const new_game = () => new Doc() as Game;
 
-/** Gets the directory for the current game */
-export const game_dir = (g: Game) => mkdirp([g.get("id")]);
+/** Adds an existing scene to an existing game */
+export const add_scene = (g: Game, s: Scene) => g.getMap().set(s.guid, s);
 
-/** The abstract shape of the game (stored in a Y.js Map as `Game`) */
-type GameShape = {
-  id: string;
-  map: Map;
-};
-
-/** Contains data related the current map */
-type Map = {
-  background: ResourceRef;
-  grid_dim: number;
-  grid_offset_x: number;
-  grid_offset_y: number;
-};
-
-type ResourceRef = Branded<"Resource">;
+export const get_scene = (g: Game, s: SceneId) => g.getMap().get(s) as Scene;

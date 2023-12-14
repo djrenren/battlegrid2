@@ -1,12 +1,12 @@
-import { Branded } from "../util/string";
+import { Nominal } from "../util/typing";
 
 export const ASSET_DIR = "assets" as GameDir;
 
 /** The type given to the file name for a given gamefile */
-export type GameFile = Branded<"GameFile">;
+export type GameFile = string & Nominal<"GameFile">;
 
 /** The type given to the file name for a given gamefile */
-export type GameDir = Branded<"GameDir">;
+export type GameDir = string & Nominal<"GameDir">;
 
 /** The type given to a resolveable path */
 export type Path = [...GameDir[], GameFile];
