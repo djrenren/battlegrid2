@@ -55,20 +55,25 @@ const MAX_BACKOFF_MILLIS = 5000;
 const setupWS = (client: WebSocketClient) => {
   if (!client.shouldConnect || client.ws !== null) return;
   const websocket = new WebSocket(client.url);
+  console.log("Connecting to websocket")
   websocket.binaryType = "arraybuffer";
   client.ws = websocket;
   set_status(client, ConnectionState.CONNECTING);
 
   websocket.onmessage = (event: MessageEvent) => {
+    console.error("Websocket connection error");
     client.wsLastMessageReceived = time.getUnixTime();
-    client.dispatchEvent(event);
+    client.dispatchEvent(new MessageEvent("message", { data: event.data }));
   };
 
   websocket.onerror = (event: Event) => {
+    console.error("Websocket connection error");
     set_status(client, ConnectionState.CONNECTING);
   };
 
   websocket.onclose = (event: Event) => {
+    console.error("Websocket connection error");
+    set_status(client, ConnectionState.CONNECTING);
     client.ws = null;
     if (client.state != ConnectionState.CONNECTED) {
       client.wsUnsuccessfulReconnects++;
@@ -88,6 +93,7 @@ const setupWS = (client: WebSocketClient) => {
     );
   };
   websocket.onopen = () => {
+    console.log("Websocket connected");
     client.wsLastMessageReceived = time.getUnixTime();
     client.wsUnsuccessfulReconnects = 0;
     set_status(client, ConnectionState.CONNECTED)

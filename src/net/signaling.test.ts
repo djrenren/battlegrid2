@@ -3,6 +3,7 @@
  * the signaling server  (and whatever protocol that server enforces)
  */
 
+import { uuidv4 } from "lib0/random.js";
 import { waitUntil } from "../util/events.ts";
 import { Peer, PeerId, fresh_peer_id } from "./peer.ts";
 import {
@@ -10,6 +11,7 @@ import {
   AddressableSignalHandler,
   Signaler,
 } from "./signaler.ts";
+import { YSignaler } from "./y-signaler.ts";
 
 describe("Signaler", () => {
   it("should be able to form a stable connection", async () => {
@@ -51,4 +53,24 @@ describe("Signaler", () => {
       () => peer.connectionState === "connected",
     );
   });
+});
+
+describe("YSignaler", () => {
+  it("Should be able to form a stable connection", async () => {
+    const topic = uuidv4();
+    const server = "ws://localhost:4444"
+    let a = new YSignaler(fresh_peer_id(), server, topic);
+    let b = new YSignaler(fresh_peer_id(), server, topic);
+
+    let peer: Peer = await new Promise((resolve) => {
+      b.signaler.once("peer", resolve);
+    });
+
+    // The peer should be able to connect
+    await waitUntil(
+      peer,
+      "connectionstatechange",
+      () => peer.connectionState === "connected",
+    );
+  }).timeout(10000)
 });

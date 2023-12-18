@@ -23,6 +23,6 @@ export const set_status = (c: Connection, state: ConnectionState): void => {
     }
 }
 
-export const connected = (c: Connection) => waitUntil(c, "connectionstatus", () =>
+export const connected = (c: Connection) => c.state === ConnectionState.CONNECTED || waitUntil(c, "connectionstatus", () =>
     c.state === ConnectionState.CONNECTED
 );
