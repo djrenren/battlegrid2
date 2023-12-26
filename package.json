@@ -3,6 +3,7 @@
   "module": "build.ts",
   "type": "module",
   "scripts": {
+    "start": "npm run build --  --serve --servedir=public",
     "build": "esbuild src/index.ts sw.ts --bundle --minify --sourcemap  --outdir=public/",
     "watch": "npm run build --  --serve --servedir=public",
     "fmt": "prettier --write .",

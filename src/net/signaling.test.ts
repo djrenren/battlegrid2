@@ -34,7 +34,7 @@ describe("Signaler", () => {
     };
     // END: A small local impl of a signaling server
 
-    // Create two clients. 
+    // Create two clients.
     let a = new_client();
     a.announce(); // Should do nothing
 
@@ -58,7 +58,7 @@ describe("Signaler", () => {
 describe("YSignaler", () => {
   it("Should be able to form a stable connection", async () => {
     const topic = uuidv4();
-    const server = "ws://localhost:4444"
+    const server = "ws://localhost:4444";
     let a = new YSignaler(fresh_peer_id(), server, topic);
     let b = new YSignaler(fresh_peer_id(), server, topic);
 
@@ -72,5 +72,5 @@ describe("YSignaler", () => {
       "connectionstatechange",
       () => peer.connectionState === "connected",
     );
-  }).timeout(10000)
+  }).timeout(10000);
 });

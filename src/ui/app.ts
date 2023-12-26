@@ -7,6 +7,8 @@ import { Scene, default_scene } from "../game/scene";
 import { WebrtcProvider } from "y-webrtc";
 import { Game, add_scene, new_game } from "../game/game";
 import { LocalSession, RemoteSession, Session } from "../game/session";
+import { dispatch_custom } from "../util/events";
+import "./toolbar";
 
 @customElement("bg-app")
 class BGApp extends LitElement {
@@ -82,7 +84,7 @@ class BGApp extends LitElement {
   render() {
     return html`
       <bg-canvas .map=${this.session.scene?.getMap("map")}></bg-canvas>
-      <div id="toolbar">${this.#host_button()}</div>
+      <tool-bar tool="select"></tool-bar>
     `;
   }
 
@@ -93,35 +95,9 @@ class BGApp extends LitElement {
       width: 100vw;
       height: 100vh;
     }
-    #toolbar {
-      backdrop-filter: blur(10px);
+    tool-bar {
       position: absolute;
-      border-radius: 10px;
-      top: 2px;
-      left: 2px;
-      display: inline flex;
-      flex-direction: row;
-      align-items: center;
-      background: rgba(0, 0, 0, 0.6);
-      color: white;
-      fill: white;
-      & svg {
-        margin: 10px;
-      }
-    }
-    .bubble {
-      background: rgba(0, 0, 0, 1);
-      align-self: stretch;
-      display: inline-block;
-      padding: 0;
-      margin: 2px 5px;
-      margin-right: 2px;
-      color: white;
-      border: none;
-      border-radius: 0 10px 10px 0;
-      padding: 0 0.25em;
-      max-width: fit-content;
-      width: 5em;
+      inset: 2px auto auto 2px;
     }
   `;
 }

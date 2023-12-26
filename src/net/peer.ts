@@ -7,7 +7,10 @@ export const fresh_peer_id = () => uuidv4() as PeerId;
 export type SignalHandler = (signal: Signal) => void;
 
 /** An extension of the native RTCPeerConnection that implements perfect signaling */
-export class Peer extends WithEvents<RTCPeerConnectionEventMap, RTCPeerConnection>(RTCPeerConnection) {
+export class Peer extends WithEvents<
+  RTCPeerConnectionEventMap,
+  RTCPeerConnection
+>(RTCPeerConnection) {
   /** Runs when any new signaling information needs to be sent */
   #emit_signal: SignalHandler;
 
@@ -89,9 +92,7 @@ export class Peer extends WithEvents<RTCPeerConnectionEventMap, RTCPeerConnectio
     }
   }
 
-  async connected() {
-
-  }
+  async connected() {}
 }
 
 export type Signal = {
