@@ -4,8 +4,6 @@
  * Native WebSockets cannot recover from a disconnect. This means you have to
  * reattach event handlers and re-construct the socket. Our implementation hides this pain from consumers.
  */
-
-import { ObservableV2 } from "lib0/observable.js";
 import {
   Connection,
   ConnectionEvents,
@@ -15,7 +13,6 @@ import {
 } from "./connection";
 import { math, time } from "lib0";
 import { WithEvents } from "../util/events";
-import { TypedEventTarget } from "../util/typed_event";
 
 export interface SocketEvents {
   message: MessageEvent;
@@ -61,20 +58,22 @@ const setupWS = (client: WebSocketClient) => {
   set_status(client, ConnectionState.CONNECTING);
 
   websocket.onmessage = (event: MessageEvent) => {
-    console.error("Websocket connection error");
     client.wsLastMessageReceived = time.getUnixTime();
     client.dispatchEvent(new MessageEvent("message", { data: event.data }));
   };
 
   websocket.onerror = (event: Event) => {
-    console.error("Websocket connection error");
+    console.error("Websocket error: ", (event as ErrorEvent).message);
     set_status(client, ConnectionState.CONNECTING);
   };
 
   websocket.onclose = (event: Event) => {
-    console.error("Websocket connection error");
-    set_status(client, ConnectionState.CONNECTING);
     client.ws = null;
+    if (!client.shouldConnect) {
+      set_status(client, ConnectionState.DISCONNECTED);
+      return;
+    }
+    set_status(client, ConnectionState.CONNECTING);
     if (client.state != ConnectionState.CONNECTED) {
       client.wsUnsuccessfulReconnects++;
     }

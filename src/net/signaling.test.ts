@@ -3,15 +3,10 @@
  * the signaling server  (and whatever protocol that server enforces)
  */
 
-import { uuidv4 } from "lib0/random.js";
 import { waitUntil } from "../util/events.ts";
 import { Peer, PeerId, fresh_peer_id } from "./peer.ts";
-import {
-  AddressableSignal,
-  AddressableSignalHandler,
-  Signaler,
-} from "./signaler.ts";
-import { YSignaler } from "./y-signaler.ts";
+import { AddressableSignal, Signaler } from "./signaler.ts";
+import { PeerSignaler, new_session } from "./peerjs-signaler.ts";
 
 describe("Signaler", () => {
   it("should be able to form a stable connection", async () => {
@@ -55,22 +50,35 @@ describe("Signaler", () => {
   });
 });
 
-describe("YSignaler", () => {
+describe("PeerSignaler", () => {
   it("Should be able to form a stable connection", async () => {
-    const topic = uuidv4();
-    const server = "ws://localhost:4444";
-    let a = new YSignaler(fresh_peer_id(), server, topic);
-    let b = new YSignaler(fresh_peer_id(), server, topic);
+    let url = new URL("http://localhost:9000/peerjs");
+    // let url = new URL(PEERJS_PUBLIC_SERVER);
 
-    let peer: Peer = await new Promise((resolve) => {
+    let a_sess = new_session();
+    let a = await PeerSignaler.create(
+      url,
+      null,
+      a_sess /* this is the server */,
+    );
+    let b = await PeerSignaler.create(
+      url,
+      a.session.id /* this is the client */,
+    );
+
+    let peerb: Peer = await new Promise((resolve) => {
       b.signaler.once("peer", resolve);
     });
 
-    // The peer should be able to connect
-    await waitUntil(
-      peer,
-      "connectionstatechange",
-      () => peer.connectionState === "connected",
-    );
+    let peera: Peer = await new Promise((resolve) => {
+      a.signaler.once("peer", resolve);
+    });
+
+    await peerb.connected();
+    await peera.connected();
+
+    console.log(peera.connectionState);
+    b.close();
+    a.close();
   }).timeout(10000);
 });

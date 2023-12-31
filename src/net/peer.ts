@@ -1,6 +1,6 @@
 import { uuidv4 } from "lib0/random.js";
 import { NominalString } from "../util/typing.ts";
-import { WithEvents } from "../util/events.ts";
+import { WithEvents, waitUntil } from "../util/events.ts";
 
 export type PeerId = NominalString<"PeerId">;
 export const fresh_peer_id = () => uuidv4() as PeerId;
@@ -44,7 +44,7 @@ export class Peer extends WithEvents<
       try {
         this.#makingOffer = true;
         await this.setLocalDescription();
-        emit_signal({ description: this.localDescription });
+        await emit_signal({ description: this.localDescription });
       } catch (err) {
       } finally {
         this.#makingOffer = false;
@@ -59,7 +59,8 @@ export class Peer extends WithEvents<
     };
 
     // Send ICE candidates to the remote peer as they are generated
-    this.onicecandidate = ({ candidate }) => emit_signal({ candidate });
+    this.onicecandidate = async ({ candidate }) =>
+      await emit_signal({ candidate });
 
     // Negotiaion doesn't occur until a channel of some kind is created.
     // By declaring a channel here, we can ensure that negotiation begins
@@ -83,7 +84,7 @@ export class Peer extends WithEvents<
       await this.setRemoteDescription(description);
       if (description.type === "offer") {
         await this.setLocalDescription();
-        this.#emit_signal({ description: this.localDescription });
+        await this.#emit_signal({ description: this.localDescription });
       }
     } else if (candidate) {
       await this.addIceCandidate(candidate).catch((err) => {
@@ -92,10 +93,16 @@ export class Peer extends WithEvents<
     }
   }
 
-  async connected() {}
+  async connected() {
+    const pred = () => this.connectionState === "connected";
+    pred() || (await waitUntil(this as any, "connectionstatechange", pred));
+  }
 }
 
 export type Signal = {
   description?: RTCSessionDescription | null;
+  /** An Ice candidate (populated after an initial offer and an answer)  */
   candidate?: RTCIceCandidate | null;
+  /** Indicates a graceful shutdown */
+  shutdown?: true;
 };

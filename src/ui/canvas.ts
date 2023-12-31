@@ -6,7 +6,7 @@ import type { Map } from "../game/scene.ts";
 import "./ppz.ts";
 import "./grid.ts";
 import { GridLines } from "./grid.ts";
-import { TypedMap } from "../util/yjs.ts";
+import { type TypedMap } from "../util/yjs.ts";
 
 @customElement("bg-canvas")
 export class Canvas extends LitElement {

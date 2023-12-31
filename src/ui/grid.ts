@@ -13,20 +13,37 @@ export class GridLines extends LitElement {
 
   render = () => html`
     <style>
-      :host {
-        background-position: ${this.offsetx}px ${this.offsety}px;
-        background-size: ${this.dim}px ${this.dim}px;
-        background-image: linear-gradient(to right, grey 1px, transparent 1px),
-          linear-gradient(to bottom, grey 1px, transparent 1px);
-      }
+      ${css`
+        :host {
+          background-position: ${this.offsetx}px ${this.offsety}px;
+          background-size: ${this.dim}px ${this.dim}px;
+          background-image: linear-gradient(to right, grey 1px, transparent 1px),
+            linear-gradient(to bottom, grey 1px, transparent 1px);
+        }`}
+
+        :host:active {
+          cursor: pointer;
+        }
+
+        :host::before {
+          position: absolute;
+          width: ${this.dim / 5 + "px"};
+          aspect-ratio: 1;
+          border-radius: 100%;
+          background: white;
+          mix-blend-mode: difference;
+          content: "";
+          top: ${this.offsety - this.dim / 10 + "px"}
+          left: ${this.offsetx - this.dim / 10 + "px"};
+        }
     </style>
   `;
 
   #wheel = (ev: WheelEvent) => {
     if (ev.shiftKey && !ev.altKey) {
       stop_ev(ev);
-      this.offsetx = (this.offsetx + Math.sign(ev.deltaX)) % this.dim;
-      this.offsety = (this.offsety + Math.sign(ev.deltaY)) % this.dim;
+      this.offsetx = this.offsetx + Math.sign(ev.deltaX);
+      this.offsety = this.offsety + Math.sign(ev.deltaY);
     }
 
     if (!ev.shiftKey && ev.altKey) {
@@ -38,6 +55,7 @@ export class GridLines extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener("wheel", this.#wheel);
+    this.addEventListener("pointerdown", this.#pointerdown);
   }
 
   disconnectedCallback(): void {
@@ -45,5 +63,9 @@ export class GridLines extends LitElement {
     this.removeEventListener("wheel", this.#wheel);
   }
 
-  static styles = css``;
+  #pointerdown(ev: PointerEvent) {
+    stop_ev(ev);
+  }
+
+  static styles = [];
 }

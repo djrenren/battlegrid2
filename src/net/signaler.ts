@@ -48,14 +48,25 @@ export class Signaler extends ObservableV2<{ peer(peer: Peer): void }> {
   /** Called when new signaling information is available */
   signal(signal: AddressableSignal) {
     let peer = this.peers.get(signal.from);
+    if (signal.shutdown) {
+      console.log(signal);
+      if (!peer) {
+        console.debug("Received shutdown for non-existant peer");
+        return;
+      }
+
+      console.log("attempting to close peer");
+      peer.close();
+      this.peers.delete(signal.from);
+    }
 
     // If we don't have a peer, let's make one
     if (!peer) {
       const to = signal.from;
       peer = new Peer(
         to,
-        (emitting) => {
-          this.#handler({ ...emitting, from: this.peer_id, to });
+        async (emitting) => {
+          await this.#handler({ ...emitting, from: this.peer_id, to });
         },
         // If to is undefined, then the signal is an announcement.
         // The announcer is polite and the responder is not polite
@@ -67,5 +78,13 @@ export class Signaler extends ObservableV2<{ peer(peer: Peer): void }> {
     }
 
     peer.signal(signal);
+  }
+
+  async close() {
+    for (const [to, peer] of this.peers) {
+      peer.close();
+      await this.#handler({ from: this.peer_id, to, shutdown: true });
+    }
+    this.peers.clear();
   }
 }

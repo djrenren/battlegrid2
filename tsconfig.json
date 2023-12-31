@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
-    "module": "esnext",
+    "module": "ESNext",
     "target": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "Bundler",
     "moduleDetection": "force",
     "allowImportingTsExtensions": true,
     "experimentalDecorators": true,
@@ -16,6 +16,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "outDir": "output"
   }
 }

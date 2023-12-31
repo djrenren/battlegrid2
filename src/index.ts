@@ -1,5 +1,6 @@
 import { ASSET_DIR, GameFile, write } from "./fs/fs.ts";
 import "./ui/app.ts";
+
 document.body.addEventListener(
   "wheel",
   (ev) => {

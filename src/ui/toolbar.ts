@@ -14,9 +14,9 @@ export class Toolbar extends WithEvents<
 
   render() {
     return html`
-        <nav>
-            <button>Host Game</button>
-        </nav>
+      <nav>
+        <button>Host Game</button>
+      </nav>
       <nav class="toolbox">
         <input
           type="radio"
@@ -73,8 +73,8 @@ export class Toolbar extends WithEvents<
     }
 
     nav.toolbox {
-        margin-top: 2px;
-        width: 30px;
+      margin-top: 2px;
+      width: 30px;
     }
 
     input[type="radio"] {
@@ -85,14 +85,15 @@ export class Toolbar extends WithEvents<
     }
 
     button {
-        padding: 0 0.5em;
+      padding: 0 0.5em;
     }
-    
+
     label {
       padding: 2px;
     }
 
-    label, button {
+    label,
+    button {
       background: transparent;
       border: none;
       border-radius: 6px;
