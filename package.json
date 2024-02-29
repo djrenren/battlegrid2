@@ -3,8 +3,7 @@
   "module": "build.ts",
   "type": "module",
   "scripts": {
-    "start": "node ./build.js serve",
-    "build": "node ./build.js",
+    "start": "vite",
     "fmt": "prettier --write .",
     "test": "wtr"
   },
@@ -15,7 +14,8 @@
     "@web/test-runner": "^0.18.0",
     "@web/test-runner-chrome": "^0.15.0",
     "esbuild": "^0.19.2",
-    "prettier": "~3.0.3"
+    "prettier": "~3.0.3",
+    "vite": "^5.1.4"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
