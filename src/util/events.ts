@@ -13,7 +13,8 @@ export const stop_ev = (ev: Event) => {
   ev.stopPropagation();
 };
 
-type CustomEventType<T extends Event> = T extends CustomEvent<infer U>
+
+type CustomEventType<T> = T extends CustomEvent<infer U>
   ? U
   : never;
 
@@ -28,41 +29,42 @@ export const window_ev = <N extends keyof WindowEventMap>(
     composed: true,
   }) as any;
 
-export type SupportsEvent<T, E> = {
-  addEventListener(t: T, e: (ev: E) => any): void;
-  removeEventListener(t: T, e: (ev: E) => any): void;
-  dispatchEvent(ev: E): void;
-};
 
-export function dispatch<
-  K extends string,
-  E extends Event,
-  T extends SupportsEvent<K, E>,
-  D,
->(target: T, k: K, c: { new (name: string, other?: D): E }, d?: D) {
-  target.dispatchEvent(new c(k, d));
-}
 
-export function dispatch_custom<
-  K extends string,
-  D,
-  T extends SupportsEvent<K, CustomEvent<D>>,
->(target: T, k: K, detail: D, options?: EventInit) {
-  target.dispatchEvent(new CustomEvent(k, { ...options, detail }));
-}
+type SupportsEvent<K extends string = string> = TypedEventTarget<{ [G in NoInfer<K>]: any }>;
+type EventName<T extends SupportsEvent> = keyof T[typeof EMFake] & string;
+type EventPayload<T extends SupportsEvent, K extends EventName<T>> = T[typeof EMFake][K];
 
-export function waitUntil<T extends SupportsEvent<K, E>, K extends string, E>(
+
+export function waitUntil<T extends SupportsEvent, K extends EventName<T>>(
   target: T,
   type: K,
-  f: (e: E) => boolean,
-): Promise<E> {
-  return new Promise<E>((resolve) => {
-    let cb = (e: E): void => {
+  f: (e: EventPayload<T, K>) => boolean,
+): Promise<EventPayload<T, K>> {
+  return new Promise<EventPayload<T, K>>((resolve) => {
+    let cb = (e: EventPayload<T, K>): void => {
       if (f(e)) target.removeEventListener(type, cb), resolve(e);
     };
 
     target.addEventListener(type, cb);
   });
+}
+
+export function dispatch_custom<T extends SupportsEvent, K extends EventName<T>>(
+  target: T,
+  event: K,
+  detail: CustomEventType<EventPayload<T, K>>
+) {
+  target.dispatchEvent(new CustomEvent(event, { detail }))
+}
+
+export function dispatch<T extends SupportsEvent, K extends EventName<T>, D>(
+  target: T,
+  event: K,
+  construct: { new(name: string, other?: D): EventPayload<T, K> },
+  d?: D
+) {
+  target.dispatchEvent(new construct(event, d));
 }
 
 export type TypedEventListener<M, T extends keyof M> = (
@@ -81,7 +83,12 @@ type ValueIsEvent<T> = {
   [key in keyof T]: Event;
 };
 
+
+declare const EMFake: unique symbol;
+
 export interface TypedEventTarget<M extends ValueIsEvent<M>> {
+  // @internal
+  [EMFake]: M
   /** Appends an event listener for events whose type attribute value is type.
    * The callback argument sets the callback that will be invoked when the event
    * is dispatched.
@@ -111,12 +118,6 @@ export interface TypedEventTarget<M extends ValueIsEvent<M>> {
     options?: boolean | AddEventListenerOptions,
   ): void;
 
-  addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: boolean | AddEventListenerOptions,
-  ): void;
-
   /** Removes the event listener in target's event listener list with the same
    * type, callback, and options. */
   removeEventListener<T extends keyof M & string>(
@@ -125,33 +126,16 @@ export interface TypedEventTarget<M extends ValueIsEvent<M>> {
     options?: EventListenerOptions | boolean,
   ): void;
 
-  removeEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: boolean | AddEventListenerOptions,
-  ): void;
-
   /**
    * Dispatches a synthetic event event to target and returns true if either
    * event's cancelable attribute value is false or its preventDefault() method
    * was not invoked, and false otherwise.
    *
-   * @deprecated To ensure type safety use the top-evel `dispatch` instead.
+   * @deprecated To ensure type safety use the top-level `dispatch` instead.
    */
   dispatchEvent: (event: Event) => boolean;
 }
 
-/** A compile-time wrapper for types to enforce precise typing */
-// export const Typed = <EM extends ValueIsEvent<EM>>(target: {new(...args: any): TypedEventTarget<EM>}): typeof target & {new(...args: any): Omit<InstanceType<typeof target>, "addEventListener" | "removeEventListener" | "dispatchEvent"> & TypedEventTarget<EM>} => target;
-
-export const WithEvents = <EM extends ValueIsEvent<EM>, T>(target: {
-  new (...args: any): T;
-}): typeof target & { new (...args: any): T & TypedEventTarget<EM> } =>
-  target as any;
-export type WithEvents<
-  EM extends ValueIsEvent<EM>,
-  T extends { new (...args: any): EventTarget },
-> = T & { new (...args: any): InstanceType<T> & TypedEventTarget<EM> };
-export const SafeTarget: {
-  new (...args: any): Omit<EventTarget, keyof TypedEventTarget<{}>>;
-} = EventTarget;
+type Constructor<T = {}> = new (...args: any[]) => T;
+export const WithEvents = <EM extends ValueIsEvent<EM>>() => 
+  <TBase extends Constructor<EventTarget>>(Base: TBase): (Omit<TBase, keyof TypedEventTarget<EM>> & { new(...args: any): Omit<InstanceType<TBase>, keyof TypedEventTarget<EM>> & TypedEventTarget<EM>}) => Base as any;
